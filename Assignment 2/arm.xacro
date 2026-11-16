@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="arm_component"
+               params="base_height link1_length link2_length parent_link:=base_link">
+
+    <!-- Static lift column behind the carriage. Its length IS link1_length,
+         so changing the parameter visibly changes the arm. -->
+    <link name="lift_column_link">
+      <visual>
+        <origin xyz="0 0 ${link1_length/2}" rpy="0 0 0"/>
+        <geometry><box size="0.04 0.04 ${link1_length}"/></geometry>
+        <material name="column_grey"><color rgba="0.6 0.6 0.6 1"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${link1_length/2}" rpy="0 0 0"/>
+        <geometry><box size="0.04 0.04 ${link1_length}"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 ${link1_length/2}" rpy="0 0 0"/>
+        <mass value="1.0"/>
+        <inertia ixx="${(0.04*0.04 + link1_length*link1_length)/12}" ixy="0" ixz="0"
+                 iyy="${(0.04*0.04 + link1_length*link1_length)/12}" iyz="0"
+                 izz="${(0.04*0.04 + 0.04*0.04)/12}"/>
+      </inertial>
+    </link>
+
+    <joint name="base_to_column_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="lift_column_link"/>
+      <origin xyz="-0.07 0 ${base_height}" rpy="0 0 0"/>
+    </joint>
+
+    <!-- Vertical carriage (moves up the column) + rail for the horizontal slide.
+         The rail length follows link2_length. -->
+    <link name="vertical_carriage_link">
+      <visual>
+        <geometry><box size="0.10 0.10 0.10"/></geometry>
+        <material name="carriage_blue"><color rgba="0.0 0.3 0.9 1"/></material>
+      </visual>
+      <visual>
+        <origin xyz="${(link2_length+0.10)/2} 0 -0.04" rpy="0 0 0"/>
+        <geometry><box size="${link2_length+0.10} 0.03 0.03"/></geometry>
+        <material name="rail_dark"><color rgba="0.2 0.2 0.2 1"/></material>
+      </visual>
+      <collision>
+        <geometry><box size="0.10 0.10 0.10"/></geometry>
+      </collision>
+      <collision>
+        <origin xyz="${(link2_length+0.10)/2} 0 -0.04" rpy="0 0 0"/>
+        <geometry><box size="${link2_length+0.10} 0.03 0.03"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="1.0"/>
+        <inertia ixx="0.002" ixy="0" ixz="0" iyy="0.002" iyz="0" izz="0.002"/>
+      </inertial>
+    </link>
+
+    <!-- q = 0 -> carriage at base_height (0.20 m); q = link1_length -> 1.00 m -->
+    <joint name="vertical_arm_joint" type="prismatic">
+      <parent link="${parent_link}"/>
+      <child link="vertical_carriage_link"/>
+      <origin xyz="0 0 ${base_height}" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="0" upper="${link1_length}" effort="100" velocity="0.2"/>
+    </joint>
+
+    <!-- Sliding horizontal arm -->
+    <link name="horizontal_arm_link">
+      <visual>
+        <origin xyz="0.05 0 0" rpy="0 0 0"/>
+        <geometry><box size="0.10 0.05 0.05"/></geometry>
+        <material name="arm_red"><color rgba="0.9 0.1 0.1 1"/></material>
+      </visual>
+      <collision>
+        <origin xyz="0.05 0 0" rpy="0 0 0"/>
+        <geometry><box size="0.10 0.05 0.05"/></geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0.05 0 0" rpy="0 0 0"/>
+        <mass value="0.5"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+    </link>
+
+    <joint name="horizontal_arm_joint" type="prismatic">
+      <parent link="vertical_carriage_link"/>
+      <child link="horizontal_arm_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <axis xyz="1 0 0"/>
+      <limit lower="0" upper="${link2_length}" effort="100" velocity="0.2"/>
+    </joint>
+
+  </xacro:macro>
+</robot>
